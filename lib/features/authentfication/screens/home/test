@@ -1,0 +1,207 @@
+class _HomeScreenState extends State<HomeScreen> {
+  final DraggableScrollableController sheetController =
+      DraggableScrollableController();
+  final ScrollController horizontalScrollController = ScrollController();
+
+  List<Boitier> boitiers = generateFakeBoitiers();
+  Boitier? selectedBoitier;
+
+  @override
+  void dispose() {
+    sheetController.dispose();
+    horizontalScrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToSelectedBoitier(int index) {
+    // Largeur de chaque élément (ajustez si nécessaire)
+    const double itemWidth = 200.0;
+    // Calcule la position de défilement pour centrer l'élément sélectionné
+    final double scrollOffset = index * itemWidth - (MediaQuery.of(context).size.width / 2) + (itemWidth / 2);
+
+    horizontalScrollController.animateTo(
+      scrollOffset,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Stack(
+        children: [
+          const MapScreen(),
+          GridView.builder(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 4,
+              crossAxisSpacing: 8.0,
+              mainAxisSpacing: 8.0,
+              childAspectRatio: 1.0,
+            ),
+            itemCount: boitiers.length,
+            itemBuilder: (context, index) {
+              final boitier = boitiers[index];
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    selectedBoitier = boitier;
+                  });
+
+                  // Attendre que l'animation du DraggableScrollableSheet se termine
+                  sheetController.animateTo(
+                    0.0,
+                    duration: const Duration(milliseconds: 400),
+                    curve: Curves.easeInOut,
+                  );
+                  Future.delayed(const Duration(milliseconds: 400), () {
+                    _scrollToSelectedBoitier(index);
+                  });
+                },
+                child: Column(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: boitier.etat
+                            ? const Color.fromARGB(255, 4, 31, 165)
+                            : MyColors.darkGrey,
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      height: 50,
+                      width: 50,
+                      child: const Icon(
+                        Icons.directions_car_outlined,
+                        color: MyColors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      boitier.immatriculation,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          if (selectedBoitier != null)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: 200,
+                child: ListView.builder(
+                  controller: horizontalScrollController,
+                  scrollDirection: Axis.horizontal,
+                  itemCount: boitiers.length,
+                  itemBuilder: (context, index) {
+                    final boitier = boitiers[index];
+                    return Container(
+                      width: 200, // Largeur de chaque carte
+                      child: CardInfosCar(
+                        boitier: boitier,
+                        onClose: () {
+                          setState(() {
+                            selectedBoitier = null;
+                          });
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          DraggableScrollableSheet(
+            controller: sheetController,
+            initialChildSize: .1,
+            minChildSize: .0,
+            maxChildSize: .8,
+            builder: (BuildContext context, ScrollController scrollController) {
+              return Container(
+                decoration: const BoxDecoration(
+                  color: MyColors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                ),
+                child: ListView.builder(
+                  controller: scrollController,
+                  itemCount: boitiers.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      return Padding(
+                        padding: const EdgeInsets.only(
+                          top: 0,
+                          bottom: FSizes.defaultSpace / 2,
+                        ),
+                        child: Column(
+                          children: [
+                            Center(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).hintColor,
+                                  borderRadius: const BorderRadius.all(
+                                      Radius.circular(10)),
+                                ),
+                                height: 4,
+                                width: 40,
+                                margin: const EdgeInsets.only(bottom: 10),
+                              ),
+                            ),
+                            const Text(
+                              "20 Vehicules Trouver",
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: MyColors.primary,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    final boitier = boitiers[index - 1];
+                    return Column(
+                      children: [
+                        ListTile(
+                          leading: Container(
+                            height: 35,
+                            width: 35,
+                            decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(100),
+                                color: boitier.etat
+                                    ? MyColors.primary
+                                    : MyColors.darkGrey),
+                            child: const Icon(
+                              Icons.location_on_outlined,
+                              color: MyColors.white,
+                            ),
+                          ),
+                          title: Text(
+                            boitier.immatriculation,
+                            style: const TextStyle(fontSize: 18),
+                          ),
+                          subtitle: Text(boitier.adresse),
+                          onTap: () {
+                            HelperFuctions.navigateToScreen(
+                              context,
+                              BoitierDetailsScreen(id: boitier.id),
+                            );
+                          },
+                        ),
+                        const Divider()
+                      ],
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
