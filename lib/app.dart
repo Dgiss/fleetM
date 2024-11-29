@@ -14,6 +14,7 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
+      title: 'Fleet Watcher',
       translations: LanguageTranslate(),
       locale: Get.deviceLocale,
       fallbackLocale: const Locale("fr", "FR"),
@@ -23,14 +24,29 @@ class App extends StatelessWidget {
       home: FutureBuilder(
         future: StorageService.getInstance(),
         builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            debugPrint('Error initializing storage: ${snapshot.error}');
+            return const Center(
+              child: Text('Error initializing app. Please try again.'),
+            );
+          }
+          
           if (snapshot.connectionState == ConnectionState.done) {
-            final storageService = snapshot.data as StorageService;
-            if (storageService.isFirstTime()) {
-              return const OnBoardingScreen();
-            } else if (!storageService.isLoggedIn()) {
-              return const LoginScreen();
+            try {
+              final storageService = snapshot.data as StorageService;
+              if (storageService.isFirstTime()) {
+                return const OnBoardingScreen();
+              } else if (!storageService.isLoggedIn()) {
+                return const LoginScreen();
+              }
+              return const HomeScreen();
+            } catch (e, stack) {
+              debugPrint('Error in routing logic: $e');
+              debugPrint('Stack trace: $stack');
+              return const Center(
+                child: Text('Something went wrong. Please restart the app.'),
+              );
             }
-            return const HomeScreen();
           }
           return const Center(child: CircularProgressIndicator());
         },

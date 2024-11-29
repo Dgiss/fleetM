@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "fleet_watcher_mobile" "\0"
+            VALUE "FileDescription", "watchermobile" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "fleet_watcher_mobile" "\0"
+            VALUE "InternalName", "watchermobile" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2024 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "fleet_watcher_mobile.exe" "\0"
-            VALUE "ProductName", "fleet_watcher_mobile" "\0"
+            VALUE "OriginalFilename", "watchermobile.exe" "\0"
+            VALUE "ProductName", "watchermobile" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

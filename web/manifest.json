@@ -1,6 +1,6 @@
 {
-    "name": "fleet_watcher_mobile",
-    "short_name": "fleet_watcher_mobile",
+    "name": "watchermobile",
+    "short_name": "watchermobile",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

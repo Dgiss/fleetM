@@ -1,4 +1,4 @@
-# fleet_watcher_mobile
+# watchermobile
 
 A new Flutter project.
 
