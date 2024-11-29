@@ -1,15 +1,13 @@
 import 'package:fleet_watcher_mobile/common/widgets/inputes/input_text_field.dart';
-import 'package:fleet_watcher_mobile/features/authentfication/screens/home/home_screen.dart';
-import 'package:fleet_watcher_mobile/models/fake/fake_user_data.dart';
+import 'package:fleet_watcher_mobile/core/routes/app_routes.dart';
+import 'package:fleet_watcher_mobile/features/authentfication/controllers/auth_controller.dart';
 import 'package:fleet_watcher_mobile/utils/constants/colors.dart';
 import 'package:fleet_watcher_mobile/utils/constants/image.dart';
 import 'package:fleet_watcher_mobile/utils/constants/sizes.dart';
-import 'package:fleet_watcher_mobile/utils/helpers/helper_functions.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:get/get.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,134 +17,178 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _authController = Get.put(AuthController());
   bool _obscurePass = true;
-  final TextEditingController _userNameController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  String? _errorMessage;
-  String? _userNameError;
+  String? _emailError;
   String? _passwordError;
+  String? _errorMessage;
 
-  // Fonction toogle Pass visibility
   void _togglePasswordVisibility() {
-    setState(() {
-      _obscurePass = !_obscurePass;
-    });
+    setState(() => _obscurePass = !_obscurePass);
   }
 
-  // Vérifier les informations de connexion
-  void _login() async {
-    String userName = _userNameController.text;
-    String password = _passwordController.text;
-    bool hasError = false;
-
-    // Refresh error msg
+  Future<void> _login() async {
     setState(() {
-      _userNameError = null;
-      _passwordError = null;
-      _errorMessage = null;
+      _emailError = _passwordError = _errorMessage = null;
     });
 
-    if (userName.isEmpty) {
-      setState(() {
-        _userNameError = "userNameError".tr;
-        hasError = true;
-      });
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty) {
+      setState(() => _emailError = "L'email est requis");
+      return;
     }
     if (password.isEmpty) {
-      setState(() {
-        _passwordError = "passError".tr;
-        hasError = true;
-      });
+      setState(() => _passwordError = "Le mot de passe est requis");
+      return;
     }
-    if (hasError) return;
-    try {
-      //try car y'a une exception si jmais il ne trouve pas l'element
-      FakeUserData.users.firstWhere(
-          (user) => user.userName == userName && user.password == password);
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('isLoggedIn', true);
 
-      HelperFuctions.navigateToScreenWithouReturn(context, const HomeScreen());
-    } catch (e) {
-      setState(() {
-        _errorMessage = "errorMessage".tr;
-      });
+    final success = await _authController.login(email, password);
+    if (success) {
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, AppRoutes.home);
+      }
+    } else {
+      setState(() => _errorMessage = "Email ou mot de passe incorrect");
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
-          child: Center(
-            child: SizedBox(
-              width: double.infinity,
-              height: HelperFuctions.screenHeight(),
-              child: Padding(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return Container(
                 padding: const EdgeInsets.all(FSizes.defaultSpace),
+                constraints: BoxConstraints(
+                  minHeight: MediaQuery.of(context).size.height - 
+                      MediaQuery.of(context).padding.top - 
+                      MediaQuery.of(context).padding.bottom,
+                ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    //header
-                    Image(
-                      image: AssetImage(MyImages.logo),
+                    const Gap(FSizes.spaceBtwSection),
+                    // Logo
+                    Center(
+                      child: Image.asset(
+                        MyImages.logo,
+                        height: 120,
+                      ),
                     ),
-                    const Gap(FSizes.spaceBtwSection * 3),
-                    //UserName
-                    InputTextField(
-                      controller: _userNameController,
-                      hintText: "loginInput".tr,
-                      hintColor: MyColors.darkGrey,
-                      icon: CupertinoIcons.mail,
-                      iconColor: MyColors.primary,
-                      contentPading: FSizes.contentPading,
-                      errorText: _userNameError,
+                    const Gap(FSizes.spaceBtwSection * 2),
+                    // Title
+                    const Text(
+                      "Bienvenue",
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: MyColors.primary,
+                      ),
                     ),
-                    const Gap(FSizes.spaceBtwInputeFields),
-                    //Password
-                    InputTextField(
-                      controller: _passwordController,
-                      obscurePass: _obscurePass,
-                      onPressed: _togglePasswordVisibility,
-                      hintText: "passInput".tr,
-                      hintColor: MyColors.darkGrey,
-                      icon: CupertinoIcons.lock,
-                      iconColor: MyColors.primary,
-                      isSuffix: true,
-                      contentPading: FSizes.contentPading,
-                      errorText: _passwordError,
+                    const Gap(FSizes.spaceBtwItems),
+                    const Text(
+                      "Connectez-vous à votre compte",
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: MyColors.darkGrey,
+                      ),
                     ),
-                    const Gap(FSizes.spaceBtwInputeFields),
-                    //error_msgs
+                    const Gap(FSizes.spaceBtwSection),
+                    // Form
+                    Form(
+                      child: Column(
+                        children: [
+                          InputTextField(
+                            controller: _emailController,
+                            hintText: "Entrez votre adresse email",
+                            hintColor: MyColors.darkGrey,
+                            icon: CupertinoIcons.mail,
+                            iconColor: MyColors.primary,
+                            contentPading: FSizes.contentPading,
+                            errorText: _emailError,
+                          ),
+                          const Gap(FSizes.spaceBtwInputeFields),
+                          InputTextField(
+                            controller: _passwordController,
+                            obscurePass: _obscurePass,
+                            onPressed: _togglePasswordVisibility,
+                            hintText: "Entrez votre mot de passe",
+                            hintColor: MyColors.darkGrey,
+                            icon: CupertinoIcons.lock,
+                            iconColor: MyColors.primary,
+                            isSuffix: true,
+                            contentPading: FSizes.contentPading,
+                            errorText: _passwordError,
+                          ),
+                        ],
+                      ),
+                    ),
                     if (_errorMessage != null)
                       Padding(
-                        padding:
-                            const EdgeInsets.only(bottom: FSizes.errorPading),
+                        padding: const EdgeInsets.only(top: FSizes.sm),
                         child: Text(
                           _errorMessage!,
                           style: const TextStyle(color: Colors.red),
                         ),
                       ),
-                    //connexion btn
-                    SizedBox(
-                      width: double.infinity,
-                      height: FSizes.btnLoginHight,
-                      child: ElevatedButton(
-                        onPressed: _login,
-                        child: Text(
-                          "btnConnecter".tr,
-                          style: const TextStyle(fontSize: FSizes.fonSizeXl),
-                        ),
-                      ),
-                    ),
+                    const Gap(FSizes.spaceBtwSection),
+                    // Login Button
+                    Obx(() => SizedBox(
+                          width: double.infinity,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: FSizes.defaultSpace),
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: MyColors.primary,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: FSizes.md),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(FSizes.borderRadiusMd),
+                                ),
+                                minimumSize: const Size(double.infinity, FSizes.btnLoginHight),
+                              ),
+                              onPressed: _authController.isLoading ? null : _login,
+                              child: _authController.isLoading
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Text(
+                                      "Se connecter",
+                                      style: TextStyle(
+                                        fontSize: FSizes.fonSizeXl,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        )),
                   ],
                 ),
-              ),
-            ),
+              );
+            }
           ),
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 }

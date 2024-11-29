@@ -1,36 +1,53 @@
+import 'package:fleet_watcher_mobile/core/services/storage_service.dart';
 import 'package:fleet_watcher_mobile/features/authentfication/screens/login/login.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class OnBoardingControllers extends GetxController {
   static OnBoardingControllers get instance => Get.find();
+
   final pageController = PageController();
-  Rx<int> currentPageIndex = 0.obs;
-  void updatePageIndicator(index) => currentPageIndex.value = index;
+  final currentPageIndex = 0.obs;
 
-  void dotNavigationClick(index) {
+  void updatePageIndicator(int index) {
     currentPageIndex.value = index;
-    pageController.jumpTo(index);
   }
 
-  void nextPage() {
-    Get.offAll(const LoginScreen());
+  void dotNavigationClick(int index) {
+    currentPageIndex.value = index;
+    pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
   }
 
-  bool isFinalPage() {
-    return currentPageIndex.value == 2;
+  Future<void> skipToLogin(BuildContext context) async {
+    await completeOnboarding();
+    if (context.mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+      );
+    }
   }
 
   void skipPage() {
-    currentPageIndex.value = 2;
-    pageController.jumpToPage(2);
+    pageController.animateToPage(
+      2,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
   }
 
-  Future<void> completeOnBoarding() async {
-    // Implement the logic for completing onboarding
-    // e.g., saving isFirstTime = false
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isFirstTime', false);
+  Future<void> completeOnboarding() async {
+    final storage = await StorageService.getInstance();
+    await storage.setFirstTime(false);
+  }
+
+  @override
+  void dispose() {
+    pageController.dispose();
+    super.dispose();
   }
 }
